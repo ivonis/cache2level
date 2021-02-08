@@ -1,10 +1,14 @@
 package com.ivo.example.cache;
 
+import com.ivo.example.cache.exception.CacheException;
+
 import java.util.Iterator;
 import java.util.Map;
 
 public interface Cache<K, V> {
-    void put(K key, V value);
+    Cache<K, V> put(K key, V value) throws CacheException;
+
+    Cache<K, V> putAll(Map<K, ? extends V> map) throws CacheException;
 
     V get(K key);
 
@@ -12,8 +16,11 @@ public interface Cache<K, V> {
 
     Iterator<K> keysIt();
 
-    void clear();
+    Map<K, ? super V> toMap(Map<K, ? super V> map);
 
-    void setEldestCollector(EldestCollector<K, V> collector);
+    Cache<K, V> clear();
 
+    int size();
+
+    void setListener(CacheListener<K, V> listener);
 }

@@ -1,31 +1,36 @@
 package com.ivo.example.cache.impl;
 
 import com.ivo.example.cache.Cache;
-import com.ivo.example.cache.EldestCollector;
+import com.ivo.example.cache.CacheContext;
+import com.ivo.example.cache.CacheListener;
+import com.ivo.example.cache.exception.CacheException;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.function.Consumer;
 
-public class Cache2l<K, V> implements Cache<K, V>, EldestCollector<K, V>, Closeable {
+public class Cache2l<K, V> implements Cache<K, V>, CacheListener<K, V>, Closeable {
     private Cache<K, V> primaryCache;
     private Cache<K, V> slaveCache;
 
-    public Cache2l(Cache<K, V> primaryCache, Cache<K, V> slaveCache) {
-        this.primaryCache = primaryCache;
-        this.slaveCache = slaveCache;
-        this.primaryCache.setEldestCollector(this);
-        this.slaveCache.setEldestCollector(this);
-    }
-    public Cache2l() {
-        this(new RamCache<>(), new RamCache<>());
+    public Cache2l(Cache<K, V> primary, Cache<K, V> slave) {
+        primaryCache = primary;
+        slaveCache = slave;
+        primaryCache.setListener(this);
     }
 
     @Override
-    public void put(K key, V value) {
+    public Cache<K, V> put(K key, V value) throws CacheException {
         primaryCache.put(key, value);
+        return this;
+    }
+
+    @Override
+    public Cache<K, V> putAll(Map<K, ? extends V> map) throws CacheException {
+        primaryCache.putAll(map);
+        return this;
     }
 
     @Override
@@ -52,26 +57,51 @@ public class Cache2l<K, V> implements Cache<K, V>, EldestCollector<K, V>, Closea
     }
 
     @Override
-    public void clear() {
+    public Map<K, ? super V> toMap(Map<K, ? super V> map) {
+        slaveCache.toMap(map);
+        primaryCache.toMap(map);
+        return map;
+    }
+
+    @Override
+    public Cache<K, V> clear() {
         primaryCache.clear();
         slaveCache.clear();
+        return this;
     }
 
     @Override
-    public void setEldestCollector(EldestCollector<K, V> collector) {
-
+    public int size() {
+        return primaryCache.size() + slaveCache.size();
     }
 
     @Override
-    public void collect(Cache sender, K key, V value) {
-        if (primaryCache == sender) {
-            slaveCache.put(key, value);
+    public void setListener(CacheListener<K, V> listener) {
+       //nothing
+    }
+
+    @Override
+    public void removeEldest(Cache<K, V> owner, K key, V value) {
+        if (primaryCache == owner) {
+            try {
+                slaveCache.put(key, value);
+            } catch (CacheException e) {
+                //nothing
+            }
         }
     }
 
     @Override
     public void close() throws IOException {
-
+        Iterator<K> pkit = primaryCache.keysIt();
+        while (pkit.hasNext()) {
+            K k = pkit.next();
+            try {
+                slaveCache.put(k, primaryCache.get(k));
+            } catch (CacheException e) {
+                throw new IOException(e);
+            }
+        }
     }
 
     final class Cache2lIterator implements Iterator<K> {
