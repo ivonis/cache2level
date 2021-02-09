@@ -1,7 +1,6 @@
 package com.ivo.example.cache.impl;
 
 import com.ivo.example.cache.Cache;
-import com.ivo.example.cache.CacheContext;
 import com.ivo.example.cache.CacheListener;
 import com.ivo.example.cache.exception.CacheException;
 
@@ -12,8 +11,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 public class Cache2l<K, V> implements Cache<K, V>, CacheListener<K, V>, Closeable {
-    private Cache<K, V> primaryCache;
-    private Cache<K, V> slaveCache;
+    private final Cache<K, V> primaryCache;
+    private final Cache<K, V> slaveCache;
 
     public Cache2l(Cache<K, V> primary, Cache<K, V> slave) {
         primaryCache = primary;
@@ -37,7 +36,14 @@ public class Cache2l<K, V> implements Cache<K, V>, CacheListener<K, V>, Closeabl
     public V get(K key) {
         V val = primaryCache.get(key);
         if (val == null) {
-            val = slaveCache.get(key);
+            val = slaveCache.remove(key);
+            if (val != null) {
+                try {
+                    primaryCache.put(key, val);
+                } catch (CacheException e) {
+                    //nothing
+                }
+            }
         }
         return val;
     }
@@ -102,6 +108,7 @@ public class Cache2l<K, V> implements Cache<K, V>, CacheListener<K, V>, Closeabl
                 throw new IOException(e);
             }
         }
+        primaryCache.clear();
     }
 
     final class Cache2lIterator implements Iterator<K> {

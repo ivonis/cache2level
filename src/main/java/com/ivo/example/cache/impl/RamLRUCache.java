@@ -4,12 +4,10 @@ package com.ivo.example.cache.impl;
 import com.ivo.example.cache.Cache;
 import com.ivo.example.cache.CacheContext;
 import com.ivo.example.cache.CacheListener;
-import com.ivo.example.cache.exception.CacheException;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 public class RamLRUCache<K, V> extends AbstractCache<K, V> {

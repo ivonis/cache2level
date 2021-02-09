@@ -7,8 +7,10 @@ import com.ivo.example.cache.exception.CacheException;
 import java.io.*;
 import java.nio.file.FileSystem;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -75,7 +77,11 @@ public class FileSysLRUCache<K, V> extends AbstractCache<K, V> {
         try {
             Path dir = getPathByKey(key);
             Triple<K, V> data = find(key, dir);
-            return data != null ? data.value : null;
+            if (data != null) {
+                changeLastAccessTime(data.path);
+                return data.value;
+            }
+            return null;
         } catch (CacheException e) {
             LOG.log(Level.WARNING, "get by key:" + key + " has failed", e);
             return null;
@@ -315,17 +321,33 @@ public class FileSysLRUCache<K, V> extends AbstractCache<K, V> {
     }
 
     private void removeEldest() {
+        final int candidatesMaxCapacity = size - capacity;
+        if (candidatesMaxCapacity <= 0) {
+            return;
+        }
         final TreeMap<FileTime, Path> candidates = new TreeMap<>();
+
         try {
             Files.walkFileTree(storeDir, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    FileTime time = attrs.lastAccessTime();
-                    candidates.put(time, file);
+                    FileTime time0 = attrs.creationTime();
+                    FileTime time1 = attrs.lastAccessTime();
+                    FileTime time2 = attrs.lastModifiedTime();
+                    FileTime time = CacheUtils.max(time0, time1, time2);
+                    if (candidates.size() < candidatesMaxCapacity) {
+                        candidates.put(time, file);
+                    } else {
+                        FileTime lastKey = candidates.lastKey();
+                        if (time != null && time.compareTo(lastKey) < 0) {
+                            candidates.remove(lastKey);
+                            candidates.put(time, file);
+                        }
+                    }
                     return super.visitFile(file, attrs);
                 }
             });
-            while (candidates.size() > capacity) {
+            while (!candidates.isEmpty()) {
                 FileTime time = candidates.firstKey();
                 Path path = candidates.remove(time);
                 try {
@@ -350,6 +372,8 @@ public class FileSysLRUCache<K, V> extends AbstractCache<K, V> {
                     try {
                         k = loadCacheKey(file);
                         keys.add(k);
+                        changeLastAccessTime(file);
+
                     } catch (CacheException e) {
                         //nothing
                     }
@@ -358,6 +382,15 @@ public class FileSysLRUCache<K, V> extends AbstractCache<K, V> {
             });
         } catch (IOException e) {
             //nothing
+        }
+    }
+
+    private static void changeLastAccessTime(Path path) {
+        try {
+            Files.getFileAttributeView(path, BasicFileAttributeView.class)
+                    .setTimes(null, FileTime.from(Instant.now()), null);
+        } catch (IOException e) {
+            LOG.log(Level.WARNING, "Cannot change of lastAccessTime for:" + path, e);
         }
     }
 

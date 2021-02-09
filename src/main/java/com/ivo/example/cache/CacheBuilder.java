@@ -32,15 +32,21 @@ public class CacheBuilder<K, V> {
         return this;
     }
 
-    public Cache<K, V> build() throws CacheException {
+    public Cache<K, V> build() {
         CacheType type = context.getCacheType();
         return switch (type) {
             case RamLRU -> new RamLRUCache<>(context.getCacheContext());
-            case FileLRU -> new FileSysLRUCache<>(context.getCacheContext());
+            case FileLRU -> {
+                try {
+                    yield new FileSysLRUCache<>(context.getCacheContext());
+                } catch (CacheException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         };
     }
 
-    public Cache<K, V> build(String key) throws CacheException {
+    public Cache<K, V> build(String key) {
         Cache<K, V> cache = build();
         if (key != null) {
             CachePool.put(key, cache);

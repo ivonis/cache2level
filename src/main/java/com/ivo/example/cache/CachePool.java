@@ -13,6 +13,7 @@ public class CachePool {
 
     }
 
+    @SuppressWarnings("unchecked")
     public static <K, V> Cache<K, V> get(String key) throws ClassCastException {
         Cache<?, ?> cache =  cacheMap.get(key);
         if (cache == null) {
@@ -33,21 +34,21 @@ public class CachePool {
         return new CacheBuilder<K, V>().begin(type);
     }
 
-    public static <K, V> Cache<K, V> buildRamCache(String key, int capacity) throws CacheException {
+    public static <K, V> Cache<K, V> buildRamCache(String key, int capacity) {
         return new CacheBuilder<K, V>()
                 .begin(CacheType.RamLRU)
                 .capacity(capacity)
                 .build(key);
     }
 
-    public static <K, V> Cache<K, V> buildRamCache(String key, Algorithm algorithm, int capacity) throws CacheException {
+    public static <K, V> Cache<K, V> buildRamCache(String key, Algorithm algorithm, int capacity) {
         return new CacheBuilder<K, V>()
                 .begin(CacheType.typeFor(false, algorithm))
                 .capacity(capacity)
                 .build(key);
     }
 
-    public static <K, V> Cache<K, V> buildFileCache(String key, int capacity, String path) throws CacheException {
+    public static <K, V> Cache<K, V> buildFileCache(String key, int capacity, String path) {
         return new CacheBuilder<K, V>()
                 .begin(CacheType.FileLRU)
                 .capacity(capacity)
@@ -55,7 +56,7 @@ public class CachePool {
                 .build(key);
     }
 
-    public static <K, V> Cache<K, V> buildFileCache(String key, Algorithm algorithm, int capacity, String path) throws CacheException {
+    public static <K, V> Cache<K, V> buildFileCache(String key, Algorithm algorithm, int capacity, String path) {
         return new CacheBuilder<K, V>()
                 .begin(CacheType.typeFor(true, algorithm))
                 .capacity(capacity)
