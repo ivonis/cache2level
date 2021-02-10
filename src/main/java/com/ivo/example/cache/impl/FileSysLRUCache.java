@@ -43,14 +43,14 @@ public class FileSysLRUCache<K, V> extends AbstractCache<K, V> {
     }
 
     @Override
-    public Cache<K, V> put(K key, V value) throws CacheException {
-        Path dir = getPathByKey(key);
-        Triple<K, V> data = find(key, dir);
-        if (data != null) {
-            saveCacheData(key, value, data.path);
-            return this;
-        }
+    public Cache<K, V> put(K key, V value) {
         try {
+            Path dir = getPathByKey(key);
+            Triple<K, V> data = find(key, dir);
+            if (data != null) {
+                saveCacheData(key, value, data.path);
+                return this;
+            }
             Files.createDirectories(dir);
             Path file = Files.createTempFile(dir, FILE_PFX, FILE_SFX);
             saveCacheData(key, value, file);
@@ -59,13 +59,13 @@ public class FileSysLRUCache<K, V> extends AbstractCache<K, V> {
                 removeEldest();
             }
             return this;
-        } catch (IOException e) {
-            throw new CacheException(e);
+        } catch (CacheException|IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public Cache<K, V> putAll(Map<K, ? extends V> map) throws CacheException {
+    public Cache<K, V> putAll(Map<K, ? extends V> map) {
         for(Map.Entry<K, ? extends V> entry : map.entrySet()) {
             put(entry.getKey(), entry.getValue());
         }

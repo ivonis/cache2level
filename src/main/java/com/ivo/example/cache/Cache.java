@@ -6,9 +6,9 @@ import java.util.Iterator;
 import java.util.Map;
 
 public interface Cache<K, V> {
-    Cache<K, V> put(K key, V value) throws CacheException;
+    Cache<K, V> put(K key, V value);
 
-    Cache<K, V> putAll(Map<K, ? extends V> map) throws CacheException;
+    Cache<K, V> putAll(Map<K, ? extends V> map);
 
     V get(K key);
 

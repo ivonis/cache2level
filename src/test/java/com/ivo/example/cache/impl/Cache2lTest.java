@@ -19,7 +19,7 @@ class Cache2lTest extends AbstractCacheTest {
     private Cache2l<Integer, Object> cache2l;
 
     @Test
-    void test2levelCache() throws CacheException {
+    void test2levelCache() {
         Cache<Integer, Object> primary = CachePool.buildRamCache(null, 5);
         Cache<Integer, Object> slave = CachePool.buildFileCache(null, 5, cacheDir.toString());
         cache2l = new TestCache2l(primary, slave);
@@ -82,7 +82,7 @@ class Cache2lTest extends AbstractCacheTest {
         }
 
         @Override
-        public void removeEldest(Cache<Integer, Object> owner, Integer key, Object value) {
+        public void removeEldest(Object owner, Integer key, Object value) {
             super.removeEldest(owner, key, value);
             if (listener != null) {
                 listener.removeEldest(owner, key, value);

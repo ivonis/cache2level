@@ -2,8 +2,6 @@ package com.ivo.example.cache.impl;
 
 import com.ivo.example.cache.Cache;
 import com.ivo.example.cache.CacheListener;
-import com.ivo.example.cache.exception.CacheException;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Iterator;
@@ -21,13 +19,13 @@ public class Cache2l<K, V> implements Cache<K, V>, CacheListener<K, V>, Closeabl
     }
 
     @Override
-    public Cache<K, V> put(K key, V value) throws CacheException {
+    public Cache<K, V> put(K key, V value) {
         primaryCache.put(key, value);
         return this;
     }
 
     @Override
-    public Cache<K, V> putAll(Map<K, ? extends V> map) throws CacheException {
+    public Cache<K, V> putAll(Map<K, ? extends V> map) {
         primaryCache.putAll(map);
         return this;
     }
@@ -38,11 +36,7 @@ public class Cache2l<K, V> implements Cache<K, V>, CacheListener<K, V>, Closeabl
         if (val == null) {
             val = slaveCache.remove(key);
             if (val != null) {
-                try {
-                    primaryCache.put(key, val);
-                } catch (CacheException e) {
-                    //nothing
-                }
+                primaryCache.put(key, val);
             }
         }
         return val;
@@ -87,13 +81,9 @@ public class Cache2l<K, V> implements Cache<K, V>, CacheListener<K, V>, Closeabl
     }
 
     @Override
-    public void removeEldest(Cache<K, V> owner, K key, V value) {
+    public void removeEldest(Object owner, K key, V value) {
         if (primaryCache == owner) {
-            try {
-                slaveCache.put(key, value);
-            } catch (CacheException e) {
-                //nothing
-            }
+            slaveCache.put(key, value);
         }
     }
 
@@ -104,8 +94,8 @@ public class Cache2l<K, V> implements Cache<K, V>, CacheListener<K, V>, Closeabl
             K k = pkit.next();
             try {
                 slaveCache.put(k, primaryCache.get(k));
-            } catch (CacheException e) {
-                throw new IOException(e);
+            } catch (RuntimeException e) {
+                //nothing
             }
         }
         primaryCache.clear();

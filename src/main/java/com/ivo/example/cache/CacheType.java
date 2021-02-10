@@ -2,7 +2,8 @@ package com.ivo.example.cache;
 
 public enum CacheType {
     RamLRU(false, Algorithm.LRU),
-    FileLRU(true, Algorithm.LRU);
+    FileLRU(true, Algorithm.LRU),
+    Ram2Q(false, Algorithm.TwoQ);
 
     public static CacheType typeFor(boolean inFileSys, Algorithm algorithm) {
         for (CacheType ct : values()) {
@@ -21,7 +22,4 @@ public enum CacheType {
         this.algorithm = algorithm;
     }
 
-    public boolean isInFileSys() {
-        return inFileSys;
-    }
 }

@@ -3,6 +3,7 @@ package com.ivo.example.cache;
 import com.ivo.example.cache.exception.CacheException;
 import com.ivo.example.cache.impl.CacheBuilderContextImpl;
 import com.ivo.example.cache.impl.FileSysLRUCache;
+import com.ivo.example.cache.impl.Ram2QCache;
 import com.ivo.example.cache.impl.RamLRUCache;
 
 public class CacheBuilder<K, V> {
@@ -43,6 +44,7 @@ public class CacheBuilder<K, V> {
                     throw new RuntimeException(e);
                 }
             }
+            case Ram2Q -> new Ram2QCache<>(context.getCacheContext());
         };
     }
 
