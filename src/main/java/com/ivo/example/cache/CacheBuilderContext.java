@@ -1,18 +1,34 @@
 package com.ivo.example.cache;
 
 public interface CacheBuilderContext<K, V> {
-    CacheType getCacheType();
 
-    void setCacheType(CacheType type);
+  Algorithm getAlg();
 
-    int getCapacity();
+  void setAlg(Algorithm alg);
 
-    void setCapacity(int capacity);
+  int getCapacity();
 
-    String getPath();
+  void setCapacity(int capacity);
 
-    void setPath(String path);
+  String getPath();
 
-    CacheContext<K, V> getCacheContext();
+  void setPath(String path);
 
+  Store getStore();
+
+  void setStore(Store store);
+
+  boolean isAsync();
+
+  void setAsync(boolean async);
+
+  CacheContext<K, V> getCacheContext();
+
+  default boolean matchClass(Class<? extends Cache<?, ?>> cc) {
+    CacheImpl a = cc.getAnnotation(CacheImpl.class);
+    return a != null
+        && getAlg() == a.alg()
+        && getStore() == a.store()
+        && isAsync() == a.async();
+  }
 }

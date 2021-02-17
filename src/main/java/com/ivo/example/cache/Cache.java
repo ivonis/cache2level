@@ -1,26 +1,25 @@
 package com.ivo.example.cache;
 
-import com.ivo.example.cache.exception.CacheException;
-
 import java.util.Iterator;
 import java.util.Map;
 
 public interface Cache<K, V> {
-    Cache<K, V> put(K key, V value);
 
-    Cache<K, V> putAll(Map<K, ? extends V> map);
+  Cache<K, V> put(K key, V value);
 
-    V get(K key);
+  Cache<K, V> putAll(Map<K, ? extends V> map);
 
-    V remove(K key);
+  V get(K key);
 
-    Iterator<K> keysIt();
+  V remove(K key);
 
-    Map<K, ? super V> toMap(Map<K, ? super V> map);
+  Iterator<K> keysIt();
 
-    Cache<K, V> clear();
+  Map<K, ? super V> toMap(Map<K, ? super V> map);
 
-    int size();
+  Cache<K, V> clear();
 
-    void setListener(CacheListener<K, V> listener);
+  int size();
+
+  void setListener(CacheListener<K, V> listener);
 }

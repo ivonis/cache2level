@@ -1,7 +1,9 @@
 package com.ivo.example.cache.impl;
 
+import com.ivo.example.cache.Algorithm;
 import com.ivo.example.cache.Cache;
 import com.ivo.example.cache.CacheContext;
+import com.ivo.example.cache.CacheImpl;
 import com.ivo.example.util.HashQueue;
 import com.ivo.example.util.LRUHashQueue;
 import java.util.HashMap;
@@ -9,11 +11,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Stream;
 
+@CacheImpl(alg = Algorithm.TwoQ)
 public class Ram2QCache<K, V> extends AbstractCache<K, V> {
 
   final HashMap<K, V> storage;
   private final HashQueue<K> queueIn, queueOut, queueHot;
 
+  @SuppressWarnings("unused")
   public Ram2QCache(CacheContext<K, V> context) {
     super(context);
     int maxCapacity = context.getMaxCapacity();

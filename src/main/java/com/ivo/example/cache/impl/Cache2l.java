@@ -9,128 +9,131 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 public class Cache2l<K, V> implements Cache<K, V>, CacheListener<K, V>, Closeable {
-    private final Cache<K, V> primaryCache;
-    private final Cache<K, V> slaveCache;
 
-    public Cache2l(Cache<K, V> primary, Cache<K, V> slave) {
-        primaryCache = primary;
-        slaveCache = slave;
-        primaryCache.setListener(this);
+  private final Cache<K, V> primaryCache;
+  private final Cache<K, V> slaveCache;
+
+  public Cache2l(Cache<K, V> primary, Cache<K, V> slave) {
+    primaryCache = primary;
+    slaveCache = slave;
+    primaryCache.setListener(this);
+  }
+
+  @Override
+  public Cache<K, V> put(K key, V value) {
+    primaryCache.put(key, value);
+    return this;
+  }
+
+  @Override
+  public Cache<K, V> putAll(Map<K, ? extends V> map) {
+    primaryCache.putAll(map);
+    return this;
+  }
+
+  @Override
+  public V get(K key) {
+    V val = primaryCache.get(key);
+    if (val == null) {
+      val = slaveCache.remove(key);
+      if (val != null) {
+        primaryCache.put(key, val);
+      }
+    }
+    return val;
+  }
+
+  @Override
+  public V remove(K key) {
+    V val = primaryCache.remove(key);
+    if (val == null) {
+      val = slaveCache.remove(key);
+    }
+    return val;
+  }
+
+  @Override
+  public Iterator<K> keysIt() {
+    return new Cache2lIterator();
+  }
+
+  @Override
+  public Map<K, ? super V> toMap(Map<K, ? super V> map) {
+    slaveCache.toMap(map);
+    primaryCache.toMap(map);
+    return map;
+  }
+
+  @Override
+  public Cache<K, V> clear() {
+    primaryCache.clear();
+    slaveCache.clear();
+    return this;
+  }
+
+  @Override
+  public int size() {
+    return primaryCache.size() + slaveCache.size();
+  }
+
+  @Override
+  public void setListener(CacheListener<K, V> listener) {
+    //nothing
+  }
+
+  @Override
+  public void onEvicted(Object owner, K key, V value) {
+    if (primaryCache == owner) {
+      slaveCache.put(key, value);
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    Iterator<K> pkit = primaryCache.keysIt();
+    while (pkit.hasNext()) {
+      K k = pkit.next();
+      try {
+        slaveCache.put(k, primaryCache.get(k));
+      } catch (RuntimeException e) {
+        //nothing
+      }
+    }
+    primaryCache.clear();
+  }
+
+  final class Cache2lIterator implements Iterator<K> {
+
+    Iterator<K> primaryIt;
+    Iterator<K> slaveIt;
+    Iterator<K> currentIt;
+
+    Cache2lIterator() {
+      primaryIt = primaryCache.keysIt();
+      slaveIt = slaveCache.keysIt();
+      currentIt = primaryIt;
     }
 
     @Override
-    public Cache<K, V> put(K key, V value) {
-        primaryCache.put(key, value);
-        return this;
+    public boolean hasNext() {
+      return primaryIt.hasNext() || slaveIt.hasNext();
     }
 
     @Override
-    public Cache<K, V> putAll(Map<K, ? extends V> map) {
-        primaryCache.putAll(map);
-        return this;
+    public K next() {
+      if (primaryIt.hasNext()) {
+        return primaryIt.next();
+      }
+      if (slaveIt.hasNext()) {
+        currentIt = slaveIt;
+        return slaveIt.next();
+      }
+      throw new NoSuchElementException();
     }
 
     @Override
-    public V get(K key) {
-        V val = primaryCache.get(key);
-        if (val == null) {
-            val = slaveCache.remove(key);
-            if (val != null) {
-                primaryCache.put(key, val);
-            }
-        }
-        return val;
+    public void remove() {
+      currentIt.remove();
     }
-
-    @Override
-    public V remove(K key) {
-        V val = primaryCache.remove(key);
-        if (val == null) {
-            val = slaveCache.remove(key);
-        }
-        return val;
-    }
-
-    @Override
-    public Iterator<K> keysIt() {
-        return new Cache2lIterator();
-    }
-
-    @Override
-    public Map<K, ? super V> toMap(Map<K, ? super V> map) {
-        slaveCache.toMap(map);
-        primaryCache.toMap(map);
-        return map;
-    }
-
-    @Override
-    public Cache<K, V> clear() {
-        primaryCache.clear();
-        slaveCache.clear();
-        return this;
-    }
-
-    @Override
-    public int size() {
-        return primaryCache.size() + slaveCache.size();
-    }
-
-    @Override
-    public void setListener(CacheListener<K, V> listener) {
-       //nothing
-    }
-
-    @Override
-    public void removeEldest(Object owner, K key, V value) {
-        if (primaryCache == owner) {
-            slaveCache.put(key, value);
-        }
-    }
-
-    @Override
-    public void close() throws IOException {
-        Iterator<K> pkit = primaryCache.keysIt();
-        while (pkit.hasNext()) {
-            K k = pkit.next();
-            try {
-                slaveCache.put(k, primaryCache.get(k));
-            } catch (RuntimeException e) {
-                //nothing
-            }
-        }
-        primaryCache.clear();
-    }
-
-    final class Cache2lIterator implements Iterator<K> {
-        Iterator<K> primaryIt;
-        Iterator<K> slaveIt;
-        Iterator<K> currentIt;
-        Cache2lIterator() {
-            primaryIt = primaryCache.keysIt();
-            slaveIt = slaveCache.keysIt();
-            currentIt = primaryIt;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return primaryIt.hasNext() || slaveIt.hasNext();
-        }
-
-        @Override
-        public K next() {
-            if (primaryIt.hasNext()) {
-                return primaryIt.next();
-            }
-            if (slaveIt.hasNext()) {
-                currentIt = slaveIt;
-                return slaveIt.next();
-            }
-            throw new NoSuchElementException();
-        }
-
-        @Override
-        public void remove() {
-            currentIt.remove();
-        }
-    }
+  }
 }
