@@ -1,9 +1,13 @@
 package com.ivo.example.util;
 
-public class LRUHashQueue<E> extends HashQueue<E> {
+public class ConcurrentLRUHashQueue<E> extends ConcurrentHashQueue<E> {
 
-  public LRUHashQueue(int capacity) {
+  public ConcurrentLRUHashQueue(int capacity) {
     super(capacity);
+  }
+
+  public ConcurrentLRUHashQueue(int capacity, float loadFactor) {
+    super(capacity, loadFactor);
   }
 
   @Override
@@ -12,7 +16,7 @@ public class LRUHashQueue<E> extends HashQueue<E> {
     return true;
   }
 
-  private void nodeToTail(Node<E> node) {
+  private synchronized void nodeToTail(Node<E> node) {
     if (node == tail) {
       return;
     }

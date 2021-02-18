@@ -5,7 +5,7 @@ import com.ivo.example.cache.Cache;
 import com.ivo.example.cache.CachePool;
 import com.ivo.example.cache.Store;
 
-class Ram2QCacheTest extends AbstractCacheTest {
+class Ram2QCacheTest extends Abstract2QCacheTest {
 
   @Override
   protected Cache<Integer, Object> buildCache() {

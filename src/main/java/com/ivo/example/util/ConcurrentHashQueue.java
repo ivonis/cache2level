@@ -2,29 +2,28 @@ package com.ivo.example.util;
 
 import java.util.AbstractQueue;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import org.jetbrains.annotations.NotNull;
 
-public class HashQueue<E> extends AbstractQueue<E> implements Queue<E> {
+public class ConcurrentHashQueue<E> extends AbstractQueue<E> implements Queue<E> {
 
   static final float DEFAULT_LOAD_FACTOR = 0.75f;
   protected final int capacity;
-  protected final Map<E, Node<E>> storage;
-  protected Node<E> head;
-  protected Node<E> tail;
+  protected final ConcurrentHashMap<E, Node<E>> storage;
+  protected volatile Node<E> head;
+  protected volatile Node<E> tail;
   private QueueListener<E> listener;
 
-  public HashQueue(int capacity) {
+  public ConcurrentHashQueue(int capacity) {
     this(capacity, DEFAULT_LOAD_FACTOR);
   }
 
-  public HashQueue(int capacity, float loadFactor) {
+  public ConcurrentHashQueue(int capacity, float loadFactor) {
     this.capacity = capacity;
-    storage = new HashMap<>(capacity, loadFactor);
+    storage = new ConcurrentHashMap<>(capacity, loadFactor);
     head = tail = null;
   }
 
@@ -51,25 +50,27 @@ public class HashQueue<E> extends AbstractQueue<E> implements Queue<E> {
   @Override
   public boolean offer(E e) {
     Node<E> ne;
-    if (storage.isEmpty()) {
-      ne = new Node<>(e);
-      head = tail = ne;
-      storage.put(e, ne);
-      return true;
-    }
     if ((ne = storage.get(e)) != null) {
       return nodeAlreadyExists(ne);
     }
     while (storage.size() >= capacity) {
       removeHead(true);
     }
-    ne = new Node<>(e, tail, null);
+    synchronized (this) {
+      ne = new Node<>(e, tail, null);
+      if (tail != null) {
+        tail.next = ne;
+      }
+      tail = ne;
+      if (head == null) {
+        head = ne;
+      }
+    }
     storage.put(e, ne);
-    tail.next = ne;
-    tail = ne;
     return true;
   }
 
+  @SuppressWarnings("unused")
   protected boolean nodeAlreadyExists(Node<E> ne) {
     return false;
   }
@@ -108,7 +109,7 @@ public class HashQueue<E> extends AbstractQueue<E> implements Queue<E> {
     return null;
   }
 
-  protected void unlinkHead() {
+  protected synchronized void unlinkHead() {
     head = head.next;
     if (head != null) {
       head.prev = null;
@@ -117,7 +118,7 @@ public class HashQueue<E> extends AbstractQueue<E> implements Queue<E> {
     }
   }
 
-  protected void unlinkNode(Node<E> node) {
+  protected synchronized void unlinkNode(Node<E> node) {
     if (node == head) {
       unlinkHead();
     } else {
@@ -144,10 +145,6 @@ public class HashQueue<E> extends AbstractQueue<E> implements Queue<E> {
     E val;
     Node<E> prev;
     Node<E> next;
-
-    Node(E val) {
-      this(val, null, null);
-    }
 
     Node(E val, Node<E> prev, Node<E> next) {
       this.val = val;

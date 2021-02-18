@@ -98,6 +98,18 @@ public abstract class FileSysCache<K, V> extends AbstractCache<K, V> {
     return this;
   }
 
+  protected void removeCacheData(Path path, boolean evicted) throws CacheException {
+    if (evicted) {
+      try {
+        Entry<K, V> entry = loadCacheData(path);
+        evict(entry.key, entry.value);
+      } catch (CacheException e) {
+        //nothing
+      }
+    }
+    removeCacheData(path);
+  }
+
   protected void removeCacheData(Path path) throws CacheException {
     try {
       Files.delete(path);

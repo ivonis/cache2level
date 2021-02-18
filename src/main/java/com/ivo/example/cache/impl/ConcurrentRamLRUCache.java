@@ -123,9 +123,7 @@ public class ConcurrentRamLRUCache<K, V> extends AbstractCache<K, V> {
       }
       if (removed != null) {
         size.decrementAndGet();
-        if (listener != null) {
-          listener.onEvicted(this, removed.key, removed.val);
-        }
+        evict(removed.key, removed.val);
       }
     }
   }

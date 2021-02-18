@@ -124,7 +124,7 @@ public class FileSysLRUCache<K, V> extends FileSysCache<K, V> {
         FileTime time = candidates.firstKey();
         Path path = candidates.remove(time);
         try {
-          cache.removeCacheData(path);
+          cache.removeCacheData(path, true);
           cache.decSize();
         } catch (CacheException e) {
           LOG.log(Level.WARNING, "Couldn't remove eldest:" + path, e);

@@ -19,4 +19,10 @@ public abstract class AbstractCache<K, V> implements Cache<K, V> {
   public void setListener(CacheListener<K, V> listener) {
     this.listener = listener;
   }
+
+  protected void evict(K key, V val) {
+    if (listener != null) {
+      listener.onEvicted(this, key, val);
+    }
+  }
 }

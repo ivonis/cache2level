@@ -4,7 +4,6 @@ package com.ivo.example.cache.impl;
 import com.ivo.example.cache.Cache;
 import com.ivo.example.cache.CacheContext;
 import com.ivo.example.cache.CacheImpl;
-import com.ivo.example.cache.CacheListener;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -22,10 +21,7 @@ public class RamLRUCache<K, V> extends AbstractCache<K, V> {
       @Override
       protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
         if (capacity < storage.size()) {
-          CacheListener<K, V> listener = RamLRUCache.this.listener;
-          if (listener != null) {
-            listener.onEvicted(RamLRUCache.this, eldest.getKey(), eldest.getValue());
-          }
+          RamLRUCache.super.evict(eldest.getKey(), eldest.getValue());
           return true;
         }
         return false;

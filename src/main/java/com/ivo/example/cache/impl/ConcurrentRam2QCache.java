@@ -4,28 +4,28 @@ import com.ivo.example.cache.Algorithm;
 import com.ivo.example.cache.Cache;
 import com.ivo.example.cache.CacheContext;
 import com.ivo.example.cache.CacheImpl;
-import com.ivo.example.util.HashQueue;
-import com.ivo.example.util.LRUHashQueue;
-import java.util.HashMap;
+import com.ivo.example.util.ConcurrentHashQueue;
+import com.ivo.example.util.ConcurrentLRUHashQueue;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
-@CacheImpl(alg = Algorithm.TwoQ)
-public class Ram2QCache<K, V> extends AbstractCache<K, V> {
+@CacheImpl(alg = Algorithm.TwoQ, async = true)
+public class ConcurrentRam2QCache<K, V> extends AbstractCache<K, V> {
 
-  final HashMap<K, V> storage;
-  private final HashQueue<K> queueIn, queueOut, queueHot;
+  final ConcurrentHashMap<K, V> storage;
+  private final ConcurrentHashQueue<K> queueIn, queueOut, queueHot;
 
   @SuppressWarnings("unused")
-  public Ram2QCache(CacheContext<K, V> context) {
+  public ConcurrentRam2QCache(CacheContext<K, V> context) {
     super(context);
     int maxCapacity = context.getMaxCapacity();
-    storage = new HashMap<>(maxCapacity);
+    storage = new ConcurrentHashMap<>(maxCapacity);
     int[] caps = calcQueueCapacities(maxCapacity);
-    queueIn = new HashQueue<>(caps[0]);
-    queueOut = new HashQueue<>(caps[1]);
-    queueHot = new LRUHashQueue<>(caps[2]);
+    queueIn = new ConcurrentHashQueue<>(caps[0]);
+    queueOut = new ConcurrentHashQueue<>(caps[1]);
+    queueHot = new ConcurrentLRUHashQueue<>(caps[2]);
     queueIn.setListener(queueOut::add);
     queueOut.setListener(this::remove);
     queueHot.setListener(key -> evict(key, this.remove(key)));
